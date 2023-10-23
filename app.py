@@ -26,7 +26,13 @@ def recommend(movie):
 st.header('Movie Recommender System Using Machine Learning')
 movies = pickle.load(open('artifacts/movie_list.pkl','rb'))
 similarity = pickle.load(open('artifacts/similarity.pkl','rb'))
-              
+
+# Initialize a DataFrame to store user data
+user_data = pd.DataFrame(columns=['Username', 'Movie Searched', 'Recommended Movie', 'Rating'])
+
+# Allow the user to input their username and rate movies
+user_name = st.text_input("Enter Your Username")
+user_ratings = {}      
 
 movie_list = movies['title'].values
 selected_movie = st.selectbox(
@@ -34,22 +40,79 @@ selected_movie = st.selectbox(
     movie_list
 )
 
+# if st.button('Show Recommendation'):
+#     recommended_movie_names,recommended_movie_posters = recommend(selected_movie)
+#     col1, col2, col3, col4, col5 = st.columns(5)
+#     with col1:
+#         st.text(recommended_movie_names[0])
+#         st.image(recommended_movie_posters[0])
+#     with col2:
+#         st.text(recommended_movie_names[1])
+#         st.image(recommended_movie_posters[1])
+
+#     with col3:
+#         st.text(recommended_movie_names[2])
+#         st.image(recommended_movie_posters[2])
+#     with col4:
+#         st.text(recommended_movie_names[3])
+#         st.image(recommended_movie_posters[3])
+#     with col5:
+#         st.text(recommended_movie_names[4])
+#         st.image(recommended_movie_posters[4])
+
 if st.button('Show Recommendation'):
-    recommended_movie_names,recommended_movie_posters = recommend(selected_movie)
+    recommended_movie_names,recommended_movie_posters,relevance_percentages = recommend(selected_movie)
+
+
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.text(recommended_movie_names[0])
         st.image(recommended_movie_posters[0])
+        st.text(f"{relevance_percentages[0]*100:.2f}% Recomended")
     with col2:
         st.text(recommended_movie_names[1])
         st.image(recommended_movie_posters[1])
+        st.text(f"{relevance_percentages[1]*100:.2f}% Recomended")
 
     with col3:
         st.text(recommended_movie_names[2])
         st.image(recommended_movie_posters[2])
+        st.text(f"{relevance_percentages[2]*100:.2f}% Recomended")
     with col4:
         st.text(recommended_movie_names[3])
         st.image(recommended_movie_posters[3])
+        st.text(f"{relevance_percentages[3]*100:.2f}% Recomended")
     with col5:
         st.text(recommended_movie_names[4])
         st.image(recommended_movie_posters[4])
+        st.text(f"{relevance_percentages[4]*100:.2f}% Recomended")
+
+    # Add a section for user ratings
+    user_ratings_title = "Rate Recommended Movies"
+    st.markdown(f"### {user_ratings_title}")
+    
+    # Allow the user to rate the recommended movies
+    for i in range(5):
+        rating = st.slider(f"Rate {recommended_movie_names[i]}", 1, 5)
+        user_data = user_data.append({'Username': user_name, 'Movie Searched': selected_movie, 'Recommended Movie': recommended_movie_names[i], 'Rating': rating}, ignore_index=True)
+
+if st.button('Show My Picks'):
+    # Filter movies with ratings greater than 3
+    high_rated_movies = user_data[user_data['Rating'] > 3]
+
+    if not high_rated_movies.empty:
+        st.markdown("### Your Highly Rated Movies:")
+        st.dataframe(high_rated_movies)
+    else:
+        st.markdown("You haven't rated any movies with a rating greater than 3 yet.")
+
+
+# Save user data to a CSV file
+if st.button('Save Data to CSV'):
+    user_data.to_csv('user_data.csv', index=False)
+
+# Display the user data
+st.dataframe(user_data)
+
+
+
