@@ -1,6 +1,7 @@
 import pickle
 import streamlit as st
 import requests
+import pandas as pd
 
 def fetch_poster(movie_id):
     url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(movie_id)
@@ -61,40 +62,43 @@ selected_movie = st.selectbox(
 #         st.image(recommended_movie_posters[4])
 
 if st.button('Show Recommendation'):
-    recommended_movie_names,recommended_movie_posters,relevance_percentages = recommend(selected_movie)
+    recommended_movie_names,recommended_movie_posters = recommend(selected_movie)
 
 
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.text(recommended_movie_names[0])
         st.image(recommended_movie_posters[0])
-        st.text(f"{relevance_percentages[0]*100:.2f}% Recomended")
+        
     with col2:
         st.text(recommended_movie_names[1])
         st.image(recommended_movie_posters[1])
-        st.text(f"{relevance_percentages[1]*100:.2f}% Recomended")
+        
 
     with col3:
         st.text(recommended_movie_names[2])
         st.image(recommended_movie_posters[2])
-        st.text(f"{relevance_percentages[2]*100:.2f}% Recomended")
+        
     with col4:
         st.text(recommended_movie_names[3])
         st.image(recommended_movie_posters[3])
-        st.text(f"{relevance_percentages[3]*100:.2f}% Recomended")
+        
     with col5:
         st.text(recommended_movie_names[4])
         st.image(recommended_movie_posters[4])
-        st.text(f"{relevance_percentages[4]*100:.2f}% Recomended")
-
+        
     # Add a section for user ratings
     user_ratings_title = "Rate Recommended Movies"
     st.markdown(f"### {user_ratings_title}")
     
-    # Allow the user to rate the recommended movies
+      # Allow the user to rate the recommended movies
+
     for i in range(5):
+
         rating = st.slider(f"Rate {recommended_movie_names[i]}", 1, 5)
-        user_data = user_data.append({'Username': user_name, 'Movie Searched': selected_movie, 'Recommended Movie': recommended_movie_names[i], 'Rating': rating}, ignore_index=True)
+
+        user_data = pd.concat([user_data, pd.DataFrame({'Username': [user_name], 'Movie Searched': [selected_movie], 'Recommended Movie': [recommended_movie_names[i]], 'Rating': [rating]})], ignore_index=True)
+
 
 if st.button('Show My Picks'):
     # Filter movies with ratings greater than 3
