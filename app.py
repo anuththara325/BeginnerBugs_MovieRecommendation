@@ -28,12 +28,12 @@ st.header('Movie Recommender System Using Machine Learning')
 movies = pickle.load(open('artifacts/movie_list.pkl','rb'))
 similarity = pickle.load(open('artifacts/similarity.pkl','rb'))
 
-# Initialize a DataFrame to store user data
-user_data = pd.DataFrame(columns=['Username', 'Movie Searched', 'Recommended Movie', 'Rating'])
+# # Initialize a DataFrame to store user data
+# user_data = pd.DataFrame(columns=['Username', 'Movie Searched', 'Recommended Movie', 'Rating'])
 
-# Allow the user to input their username and rate movies
-user_name = st.text_input("Enter Your Username")
-user_ratings = {}      
+# # # Allow the user to input their username and rate movies
+# # user_name = st.text_input("Enter Your Username")
+# # user_ratings = {}      
 
 movie_list = movies['title'].values
 selected_movie = st.selectbox(
@@ -66,57 +66,48 @@ if st.button('Show Recommendation'):
 
 
     col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.text(recommended_movie_names[0])
-        st.image(recommended_movie_posters[0])
-        
-    with col2:
-        st.text(recommended_movie_names[1])
-        st.image(recommended_movie_posters[1])
-        
+    user_ratings = {}
 
-    with col3:
-        st.text(recommended_movie_names[2])
-        st.image(recommended_movie_posters[2])
-        
-    with col4:
-        st.text(recommended_movie_names[3])
-        st.image(recommended_movie_posters[3])
-        
-    with col5:
-        st.text(recommended_movie_names[4])
-        st.image(recommended_movie_posters[4])
-        
+    for i in range(5):
+        with col1:
+            st.text(recommended_movie_names[i])
+        with col2:
+            st.image(recommended_movie_posters[i])
+        with col3:
+            form = st.form(key=f'rating_form_{i}')
+            rating = form.slider(f"Rate {recommended_movie_names[i]}", 1, 5)
+            submit_button = form.form_submit_button(label='Submit Rating')
+            if submit_button:
+                user_ratings[recommended_movie_names[i]] = rating
+            
     # Add a section for user ratings
     user_ratings_title = "Rate Recommended Movies"
     st.markdown(f"### {user_ratings_title}")
-    
-      # Allow the user to rate the recommended movies
 
-    for i in range(5):
+    # Create a button to submit ratings
+    submit_button = st.button("Submit Ratings")
 
-        rating = st.slider(f"Rate {recommended_movie_names[i]}", 1, 5)
+    if submit_button:
+        st.write("Your ratings:")
+        st.write(user_ratings)
 
-        user_data = pd.concat([user_data, pd.DataFrame({'Username': [user_name], 'Movie Searched': [selected_movie], 'Recommended Movie': [recommended_movie_names[i]], 'Rating': [rating]})], ignore_index=True)
+# if st.button('Show My Picks'):
+#     # Filter movies with ratings greater than 3
+#     high_rated_movies = user_data[user_data['Rating'] > 3]
 
-
-if st.button('Show My Picks'):
-    # Filter movies with ratings greater than 3
-    high_rated_movies = user_data[user_data['Rating'] > 3]
-
-    if not high_rated_movies.empty:
-        st.markdown("### Your Highly Rated Movies:")
-        st.dataframe(high_rated_movies)
-    else:
-        st.markdown("You haven't rated any movies with a rating greater than 3 yet.")
+#     if not high_rated_movies.empty:
+#         st.markdown("### Your Highly Rated Movies:")
+#         st.dataframe(high_rated_movies)
+#     else:
+#         st.markdown("You haven't rated any movies with a rating greater than 3 yet.")
 
 
-# Save user data to a CSV file
-if st.button('Save Data to CSV'):
-    user_data.to_csv('user_data.csv', index=False)
+# # Save user data to a CSV file
+# if st.button('Save Data to CSV'):
+#     user_data.to_csv('user_data.csv', index=False)
 
-# Display the user data
-st.dataframe(user_data)
+# # Display the user data
+# st.dataframe(user_data)
 
 
 
