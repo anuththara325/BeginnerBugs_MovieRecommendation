@@ -14,6 +14,7 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from tmdbv3api import TMDb
 from tmdbv3api import Movie
+from sklearn.neighbors import NearestNeighbors
 
 # Load the dataset 
 ratings_file = '/Users/anuththaradivyanjalie/Documents/SLIIT/IRWA/Group Assignment/BeginnerBugs_MovieRecommendation/new_dataset/ratings.csv'  
@@ -63,6 +64,17 @@ tfidf_matrix = tfidf_vectorizer.fit_transform(df_movies['genres'])
 # TMDb setup
 tmdb = TMDb()
 tmdb.api_key = '8265bd1679663a7ea12ac168da84d2e8&language=en-US'  # Replace with your TMDb API key
+# Function to get movie poster from TMDb
+def get_movie_poster(movie_title):
+    movie = Movie()
+    search = movie.search(movie_title)
+    if search:
+        movie_id = search[0]['id']  # Assuming the first search result is the correct movie
+        movie_info = movie.details(movie_id)
+        poster_path = movie_info['poster_path']
+        return f"https://image.tmdb.org/t/p/w500{poster_path}"
+    else:
+        return None
 
 # Create a function to get movie recommendations and posters
 def get_recommendations_with_posters(title, num_recommendations=5):
@@ -80,20 +92,19 @@ def get_recommendations_with_posters(title, num_recommendations=5):
     
     return recommended_movies_with_posters
 
-# Function to get movie poster from TMDb
-def get_movie_poster(movie_title):
-    movie = Movie()
-    search = movie.search(movie_title)
-    if search:
-        movie_id = search[0]['id']  # Assuming the first search result is the correct movie
-        movie_info = movie.details(movie_id)
-        poster_path = movie_info['poster_path']
-        return f"https://image.tmdb.org/t/p/w500{poster_path}"
-    else:
-        return None
+
+def get_recommendations(title, num_recommendations=10):
+    # Create a DataFrame for movie titles and their corresponding indices
+    movie_indices = pd.Series(df_movies.index, index=df_movies['title'])
+    idx = movie_indices[title]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    movie_indices = [i[0] for i in sim_scores]
+    return df_movies['title'].iloc[movie_indices[1:num_recommendations + 1]]
+
     
 # Create a Streamlit app
-original_title = '<p style="font-family: Courier; color:LightPurple; font-size: 50px;">Movie Bugs</p>'
+original_title = '<p style="font-family: Courier; color:LightPurple; font-size: 70px;">Movie Bugs</p>'
 #Arial
 st.markdown(original_title, unsafe_allow_html=True)
 # st.title('Movie Bugs')
@@ -118,6 +129,12 @@ if movie_name:
             col.write(recommended_movie)
             if poster_url:
                 col.image(poster_url, caption=recommended_movie, width=150)
+
+            # Calculate relevance for each recommended movie
+            cosine_similarities = cosine_similarity(tfidf_matrix[i], tfidf_matrix)
+            relevance = (cosine_similarities[0][0] * 100).round(2)
+            col.write(f'Relevance: {relevance}%')
+
     except KeyError:
         st.error('Movie not found in the dataset. Please try a different movie name.')
 
@@ -144,9 +161,28 @@ if recommendations:  # Check if recommendations exist
         print(df_ratings)
         df_ratings.to_csv(ratings_file, sep=',', index=False, encoding='utf-8')
 
-        st.success('Genre-based ratings submitted and stored in ratings.csv')
+        st.success('Genre-based ratings submitted successfully!')
 
+# Use the Nearest Neighbors algorithm for user-specific recommendations
+if movie_name and user_id:
+    movie_id = df_movies[df_movies['title'] == movie_name]['movieId'].values[0]
+    user_ratings = user_movie_rating_scaled[user_id - 1].reshape(1, -1)
+    
+    # Fit a Nearest Neighbors model using the user-movie rating matrix
+    model = NearestNeighbors(n_neighbors=10, metric='cosine', algorithm='brute')
+    model.fit(user_movie_rating_scaled)
+    
+    distances, indices = model.kneighbors(user_ratings, 10)
+    recommended_movie_indices = indices[0]
+    recommended_movies = [df_movies['title'].iloc[idx] for idx in recommended_movie_indices]
 
+    # Create spacing using Markdown
+    st.markdown("<br>", unsafe_allow_html=True)  # Add some space
+    st.markdown("<br>", unsafe_allow_html=True)  # Add some space
+    st.markdown("<br>", unsafe_allow_html=True)  # Add some space
 
-
+    # Display the recommended movies in a table
+    st.write(f'Most Popular Movies ')
+    table_data = pd.DataFrame(recommended_movies[:5], columns=["Recommended Movies"])
+    st.table(table_data)
 
