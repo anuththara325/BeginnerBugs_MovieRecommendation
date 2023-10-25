@@ -50,7 +50,7 @@ df_movies['genres'] = df_movies['genres'].fillna('')  # Fill missing genres
 tfidf_matrix = tfidf_vectorizer.fit_transform(df_movies['genres'])
 
 # Create a function to get movie recommendations
-def get_recommendations(title, num_recommendations=10):
+def get_recommendations(title, num_recommendations=5):
     # Create a DataFrame for movie titles and their corresponding indices
     movie_indices = pd.Series(df_movies.index, index=df_movies['title'])
     idx = movie_indices[title]
@@ -60,7 +60,7 @@ def get_recommendations(title, num_recommendations=10):
     return df_movies['title'].iloc[movie_indices[1:num_recommendations + 1]]
 
 # Create a function to get movie recommendations based on genres
-def get_genre_recommendations(title, num_recommendations=10):
+def get_genre_recommendations(title, num_recommendations=5):
     idx = df_movies[df_movies['title'] == title].index[0]
     cosine_similarities = cosine_similarity(tfidf_matrix[idx], tfidf_matrix)
     similar_movies = list(enumerate(cosine_similarities[0]))
@@ -79,30 +79,31 @@ movie_name = st.selectbox('Select a Movie', df_movies['title'])
 # Show movie recommendations if a movie name is provided
 if movie_name:
     try:
-        recommendations = get_recommendations(movie_name)
+        genre_recommendations = get_genre_recommendations(movie_name)
         st.write(f'Recommended Movies for {movie_name}:')
-        st.write(recommendations)
+        st.write(genre_recommendations)
     except KeyError:
         st.error('Movie not found in the dataset. Please try a different movie name.')
 
-# Show genre-based movie recommendations
-if movie_name:
-    st.subheader('Genre-Based Recommendations')
-    genre_recommendations = get_genre_recommendations(movie_name)
-    st.write(f'Recommended Movies based on Genres for {movie_name}:')
-    st.write(genre_recommendations)
+# # Show genre-based movie recommendations
+# if movie_name:
+#     st.subheader('Genre-Based Recommendations')
+#     genre_recommendations = get_genre_recommendations(movie_name)
+#     st.write(f'Recommended Movies based on Genres for {movie_name}:')
+#     st.write(genre_recommendations)
 
 # Use the Nearest Neighbors algorithm for user-specific recommendations
-if movie_name and user_id:
-    movie_id = df_movies[df_movies['title'] == movie_name]['movieId'].values[0]
-    model = NearestNeighbors(n_neighbors=10, metric='cosine', algorithm='brute')
-    model.fit(user_movie_rating_scaled)
-    user_ratings = user_movie_rating_scaled[user_id - 1].reshape(1, -1)
-    distances, indices = model.kneighbors(user_ratings, 10)
-    recommended_movie_indices = indices[0]
-    recommended_movies = [df_movies['title'].iloc[idx] for idx in recommended_movie_indices]
-    st.write(f'User-Specific Recommendations for User {user_id}:')
-    st.write(recommended_movies)
+# if movie_name and user_id:
+#     movie_id = df_movies[df_movies['title'] == movie_name]['movieId'].values[0]
+#     model = NearestNeighbors(n_neighbors=10, metric='cosine', algorithm='brute')
+#     model.fit(user_movie_rating_scaled)
+#     user_ratings = user_movie_rating_scaled[user_id - 1].reshape(1, -1)
+#     distances, indices = model.kneighbors(user_ratings, 10)
+#     recommended_movie_indices = indices[0]
+#     recommended_movies = [df_movies['title'].iloc[idx] for idx in recommended_movie_indices]
+#     st.write(f'User-Specific Recommendations for User {user_id}:')
+#     st.write(recommended_movies)
+    
 
 # Allow users to rate genre-based recommended movies and store ratings
 if genre_recommendations:
@@ -113,13 +114,21 @@ if genre_recommendations:
         ratings[movie] = rating
 
     if st.button('Submit Genre-Based Ratings'):
-        # Append new ratings to the ratings.csv file
+        # Append new genre-based ratings to the ratings.csv file
         new_ratings = []
         for movie, rating in ratings.items():
             movie_id = df_movies[df_movies['title'] == movie]['movieId'].values[0]
-            new_ratings.append({'userId': user_id, 'movieId': movie_id, 'rating': rating,'timestamp':0})
+            new_ratings.append({'userId': user_id, 'movieId': movie_id, 'rating': rating, 'timestamp': 0})
         
         df_new_ratings = pd.DataFrame(new_ratings)
+        print(df_new_ratings)
         df_ratings = pd.concat([df_ratings, df_new_ratings], ignore_index=True)
-        df_ratings.to_csv(ratings_file, index=False)
+        print(df_ratings)
+        df_ratings.to_csv(ratings_file,sep=',', index=False, encoding='utf-8')
+        # Set file permissions for ratings.csv
+        
         st.success('Genre-based ratings submitted and stored in ratings.csv')
+
+
+
+
