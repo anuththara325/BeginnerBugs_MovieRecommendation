@@ -30,7 +30,6 @@ df_movies = pd.read_csv(movies_file)
 # Since we don't need that information we will be remove that part from the movie titel.
 df_movies['title'] = df_movies['title'].str.replace(r'\(\d{4}\)', '', regex=True)
 
-
 # Combine genres into a single string
 df_movies['genres'] = df_movies['genres'].str.replace('|', ' ')
 
@@ -51,6 +50,7 @@ scaler = StandardScaler()
 user_movie_rating_scaled = scaler.fit_transform(user_movie_rating)
 
 # Calculate the similarity matrix using cosine similarity
+#to find the similarity between the users based on their standardized movie ratings
 cosine_sim = cosine_similarity(user_movie_rating_scaled)
 
 # Import NLTK and download stopwords
@@ -59,6 +59,7 @@ nltk.download('stopwords')
 # Create a TF-IDF vectorizer for movie descriptions
 tfidf_vectorizer = TfidfVectorizer(stop_words=stopwords.words('english'))
 df_movies['genres'] = df_movies['genres'].fillna('')  # Fill missing genres
+#creating the tfidf matrix for the genre column
 tfidf_matrix = tfidf_vectorizer.fit_transform(df_movies['genres'])
 
 # TMDb setup
@@ -106,7 +107,7 @@ def get_recommendations(title, num_recommendations=10):
 # Create a Streamlit app
 original_title = '<p style="font-family: Courier; color:LightPurple; font-size: 70px;">Movie Bugs</p>'
 #Arial
-st.markdown(original_title, unsafe_allow_html=True)
+st.markdown(original_title, unsafe_allow_html=True)  
 # st.title('Movie Bugs')
 st.write('Welcome to Movie Bugs! This app provides movie recommendations based on genres and user ratings.')
 
@@ -163,6 +164,7 @@ if recommendations:  # Check if recommendations exist
 
         st.success('Genre-based ratings submitted successfully!')
 
+#collaborative filtering
 # Use the Nearest Neighbors algorithm for user-specific recommendations
 if movie_name and user_id:
     movie_id = df_movies[df_movies['title'] == movie_name]['movieId'].values[0]
